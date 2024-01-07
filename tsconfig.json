@@ -1,0 +1,18 @@
+{
+  "display": "Node 21",
+  "_version": "21.0.0",
+
+  "compilerOptions": {
+    "lib": ["es2023"],
+    "module": "node16",
+    "outDir": "dist",
+    "target": "es2022",
+    "noUncheckedIndexedAccess": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node16"
+  },
+  "include": ["src"]
+}
