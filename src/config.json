@@ -1,0 +1,22 @@
+{
+    "stores": [
+      {
+        "name": "Peak KL",
+        "url": "https://peakkl.com",
+        "proxy": {
+          "enabled": false,
+          "proxyListPath": "./proxies.txt"
+        }
+      },
+      {
+        "name": "Clairvoyant",
+        "url": "https://byclairvoyant.com",
+        "proxy": {
+          "enabled": false,
+          "proxyListPath": "./proxies.txt"
+        }
+      }
+    ],
+    "pollingInterval": 5000
+  }
+  
