@@ -13,6 +13,10 @@ class Log {
     console.log(`[${new Date().toLocaleString()}] [ERROR] ${message}`);
   };
 
+  static Warning = (message: string) => {
+    console.log(`[${new Date().toLocaleString()}] [Warning] ${message}`);
+  };
+
   static Success = (message: string) => {
     console.log(`[${new Date().toLocaleString()}] [SUCCESS] ${message}`);
   };

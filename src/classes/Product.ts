@@ -1,50 +1,129 @@
-import { ProductInfo } from "./types";
+import { ProductData } from "./types";
 
 class Product {
   id: number;
   name: string;
   url: string;
+  handle: string;
   sellerUrl: string;
   price: number;
   available: boolean;
   title: string;
   image: string;
-  variants: string[];
+  images: { src: string }[];
+  variants: Array<{
+    id: number;
+    title: string;
+    price: number;
+    available: boolean;
+    inventory_quantity: number;
+  }>;
   lastUpdate: string;
+  updated_at?: string | undefined;
 
   constructor(
     id: number,
     sellerUrl: string,
     name?: string,
     url?: string,
+    handle?: string,
     price?: number,
     available?: boolean,
     title?: string,
     image?: string,
-    variants?: string[],
-    lastUpdate?: string
-  ) {
+    lastUpdate?: string,
+    variants?: Array<{
+      id: number;
+      title: string;
+      price: number;
+      available: boolean;
+      inventory_quantity: number;
+    }>,
+    images?: { src: string }[],
+    updated_at?: string | undefined,
+
+) {
     this.id = id;
     this.name = name || "";
     this.url = url || "";
+    this.handle = handle || "";
     this.sellerUrl = sellerUrl;
     this.available = available || false;
     this.price = price || 0;
     this.title = title || "";
     this.image = image || "";
+    this.images = images || [];
     this.variants = variants || [];
     this.lastUpdate = lastUpdate || "";
-  }
+    this.updated_at = updated_at;
+}
 
-  updateInformation = (productInfo: ProductInfo): void => {
-    this.id = productInfo.id;
-    this.name = productInfo.name;
-    this.url = `https://${this.sellerUrl}/products/${productInfo.id}`; // use productInfo.id here
-    this.price = productInfo.price;
-    this.title = productInfo.title;
-    this.image = productInfo.images?.[0]?.src || "";
-    this.variants = productInfo.variants;
-    this.lastUpdate = productInfo.updated_at;
+  updateInformation = (productData: ProductData): void => {
+    this.id = productData.id;
+    this.name = productData.name;
+    this.handle = productData.handle;
+    this.url = `https://${this.sellerUrl}/products/${this.handle}`;
+    this.price = productData.price;
+    this.title = productData.title;
+    this.image = productData.images?.[0]?.src || "";
+    this.variants = productData.variants || [];
+
+    productData.variants.forEach((x) => {
+      this.variants = [
+        ...this.variants,
+        {
+          id: x.id,
+          title: x.title,
+          price: x.price,
+          available: x.available,
+          inventory_quantity: x.inventory_quantity,
+        },
+      ];
+    });
+    this.available = productData.available;
+  };
+
+  needToNotifyUpdate = (product: ProductData) => {
+    var needToNotify =
+      this.id != product.id ||
+      this.sellerUrl != product.sellerUrl ||
+      this.handle != product.handle ||
+      this.title != product.title ||
+      this.variants.length != product.variants.length ||
+      this.available != product.available;
+
+    if (needToNotify) {
+      return true;
+    }
+
+    for (let i = 0; i < this.variants.length; i++) {
+      var oldV = this.variants[i] as {
+        id: number;
+        title: string;
+        price: number;
+        available: boolean;
+        inventory_quantity: number;
+      };
+      var newV = (product.variants[i] ?? {}) as {
+        id: number;
+        title: string;
+        price: number;
+        available: boolean;
+        inventory_quantity: number;
+      };
+
+      if (
+        oldV.id !== newV.id ||
+        oldV.title !== newV.title ||
+        oldV.price !== newV.price ||
+        oldV.available !== newV.available ||
+        oldV.inventory_quantity !== newV.inventory_quantity
+      ) {
+        needToNotify = true;
+        break;
+      }
+    }
+    return needToNotify;
   };
 }
 

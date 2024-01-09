@@ -1,50 +1,44 @@
-import axios from 'axios';
-import * as cheerio from 'cheerio';
-import * as fs from 'fs';
+import {MongoClient, ServerApiVersion } from 'mongodb';
+import Monitor from './classes/Monitor';
+import Seller from './models/SellerModel';
+import Discord from './classes/Discord';
+import { globalConfig } from './global';
+import { StoreConfig } from './classes/types';
 
-interface CollectionData {
-  products: any[]; // Adjust the type according to the actual structure of your data
-}
+const uri = 'mongodb+srv://keemdev:a3215987A.@discord-monitor.oos3lbq.mongodb.net/?retryWrites=true&w=majority';
 
-async function fetchData(url: string): Promise<CollectionData | null> {
+async function run() {
   try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
 
-    // Access the element with id 'CollectionDataStorage'
-    const collectionDataElement = $('#CollectionDataStorage');
-    if (collectionDataElement.length > 0) {
-      // Extract and parse the JSON data from the 'data-collection' attribute
-      const collectionDataString = collectionDataElement.attr('data-collection');
-      const collectionData: CollectionData = JSON.parse(collectionDataString as string);
+    const client = new MongoClient(uri, { serverApi:{
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+        }});
 
-      return collectionData;
-    } else {
-      console.error('Element with id "CollectionDataStorage" not found.');
+    await client.connect();
+    
+    // Use deleteMany without a callback, it returns a promise
+    await Seller.deleteMany({});
+
+    const options = { ordered: false };
+    await Seller.insertMany(globalConfig.stores, options);
+
+    const tasksQuery = await Seller.find({}) as StoreConfig[];
+
+    for (let i = 0; i < tasksQuery.length; i++) {
+      setTimeout(() => {
+        if (tasksQuery[i]) {
+          const { name, url, proxy } = tasksQuery[i]!;
+          new Monitor({ name, url, proxy }).start();
+        }
+      }, 4000 * i);
     }
-  } catch (error: any) {
-    console.error('Error fetching data:', error.message);
-  }
 
-  return null;
+    Discord.info('Monitor successfully started!');
+  } catch (err) {
+    console.error(err);
+  } 
 }
 
-// Example usage for Clairvoyant
-(async () => {
-  const clairvoyantUrl = 'https://byclairvoyant.com/collections/feature-on-homepage';
-  const clairvoyantData = await fetchData(clairvoyantUrl);
-  if (clairvoyantData) {
-    // Save Clairvoyant data to a JSON file
-    fs.writeFileSync('clairvoyant-data.json', JSON.stringify(clairvoyantData.products, null, 2));
-    console.log('Clairvoyant Data saved to clairvoyant-data.json');
-  }
-
-  // Example usage for PeakKL
-  const peakKLUrl = 'https://www.peakkl.com/collections/new-collection';
-  const peakKLData = await fetchData(peakKLUrl);
-  if (peakKLData) {
-    // Save PeakKL data to a JSON file
-    fs.writeFileSync('peakkl-data.json', JSON.stringify(peakKLData.products, null, 2));
-    console.log('PeakKL Data saved to peakkl-data.json');
-  }
-})();
+run();
