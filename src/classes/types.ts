@@ -47,3 +47,13 @@ export interface Config {
   webhook_url: string[];
   discord_message_settings: DiscordMessageSettings;
 }
+
+
+// export interface Store {
+//   name: string;
+//   url: string;
+//   proxy: {
+//     enabled: boolean;
+//     proxyListPath: string;
+//   };
+// }

@@ -3,25 +3,12 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import Discord from './Discord';
 import Seller, { SellerModel } from "../models/SellerModel";
 import Product from "./Product";
-import { ProductData } from "./types";
+import {Config, StoreConfig, ProductData} from "./types";
 import Log from "./Log";
 import fs from "fs";
 import path from "path";
 import * as cheerio from "cheerio";
 
-interface Store {
-  name: string;
-  url: string;
-  proxy: {
-    enabled: boolean;
-    proxyListPath: string;
-  };
-}
-
-interface Config {
-  stores: Store[];
-  pollingInterval: number;
-}
 
 interface Proxy {
   url: string;
@@ -36,18 +23,19 @@ class Monitor {
   proxiesList: Proxy[];
   proxyCount: number;
   currentProxy: Proxy;
-  store: Store;
+  store: StoreConfig;
   monitor!: NodeJS.Timeout;
 
-  constructor(store: Store) {
+  constructor(store: StoreConfig) {
     this.sellerUrl = store.url;
     this.firstRun = true;
     this.sellerId = store.name;
     this.store = store;
-
+    Log.Info(`Creating Monitor for ${this.sellerUrl}`);
     this.proxiesList = [{ url: "", unbanTime: 0, banCount: 0.5 }];
     this.proxyCount = 0;
-    if (store.proxy.enabled) {
+    if (store.proxy && store.proxy.enabled) {
+      Log.Info(`Proxy is enabled for ${this.sellerUrl}`);
       const proxyListPath = path.resolve(__dirname, store.proxy.proxyListPath);
       const proxies = fs
         .readFileSync(proxyListPath, "utf-8")
@@ -61,6 +49,7 @@ class Monitor {
   }
 
   start = async (): Promise<void> => {
+    Log.Info(`Starting Monitor for ${this.sellerUrl}`);
     this.monitor = setInterval(async () => {
       try {
         var config = {};
@@ -105,23 +94,25 @@ class Monitor {
 
         const response = await axios.get(url, config);
 
+        Log.Info(`Axios request successful for ${this.sellerUrl}`);
+
         this.currentProxy.banCount = 0.5;
 
         const $ = cheerio.load(response.data);
-
         let collectionData: { products: ProductData[] } = { products: [] };
+
         const collectionDataElement = $("#CollectionDataStorage");
         if (collectionDataElement.length > 0) {
           const collectionDataString =
             collectionDataElement.attr("data-collection");
           collectionData = JSON.parse(collectionDataString as string);
-          return collectionData;
         } else {
           Log.Error("Entry point not found");
         }
-
+        
         var products = collectionData.products;
 
+        Log.Info(`Found ${products.length} products for ${this.sellerUrl}`);
         if (this.firstRun) {
           let newProducts: Product[] = [];
 
@@ -192,6 +183,7 @@ class Monitor {
                     var newPr = new Product(product.id, this.sellerUrl);
                     newPr.updateInformation(product);
                     newProducts =[...newProducts, newPr];
+                    Log.Success(`New product found for ${this.sellerUrl}, ${newPr.title}, ${newPr.variants}`);
                     Discord.notifyProduct(newPr);
                   }
                 }
@@ -200,7 +192,7 @@ class Monitor {
           );
         }
       } catch (error) {
-        // Handle errors
+        Log.Error(`Error in Monitor for ${this.sellerUrl}:${error}`);
       }
     }, config.pollingInterval);
   };
