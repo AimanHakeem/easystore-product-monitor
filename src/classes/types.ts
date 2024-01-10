@@ -28,7 +28,7 @@ export interface ProxyConfig {
 }
 
 export interface StoreConfig {
-  name: string;
+  _id: string;
   url: string;
   proxy: ProxyConfig;
 }

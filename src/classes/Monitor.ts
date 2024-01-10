@@ -1,14 +1,13 @@
 import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
-import Discord from './Discord';
+import Discord from "./Discord";
 import Seller, { SellerModel } from "../models/SellerModel";
 import Product from "./Product";
-import {Config, StoreConfig, ProductData} from "./types";
+import { Config, StoreConfig, ProductData } from "./types";
 import Log from "./Log";
 import fs from "fs";
 import path from "path";
 import * as cheerio from "cheerio";
-
 
 interface Proxy {
   url: string;
@@ -29,7 +28,7 @@ class Monitor {
   constructor(store: StoreConfig) {
     this.sellerUrl = store.url;
     this.firstRun = true;
-    this.sellerId = store.name;
+    this.sellerId = store._id;
     this.store = store;
     Log.Info(`Creating Monitor for ${this.sellerUrl}`);
     this.proxiesList = [{ url: "", unbanTime: 0, banCount: 0.5 }];
@@ -94,7 +93,7 @@ class Monitor {
 
         const response = await axios.get(url, config);
 
-        Log.Info(`Axios request successful for ${this.sellerUrl}`);
+        Log.Info(`Crawling site: ${this.sellerUrl}`);
 
         this.currentProxy.banCount = 0.5;
 
@@ -109,10 +108,10 @@ class Monitor {
         } else {
           Log.Error("Entry point not found");
         }
-        
+
         var products = collectionData.products;
 
-        Log.Info(`Found ${products.length} products for ${this.sellerUrl}`);
+        Log.Info(`Found ${products.length} products from ${this.sellerUrl}`);
         if (this.firstRun) {
           let newProducts: Product[] = [];
 
@@ -132,64 +131,70 @@ class Monitor {
 
           this.firstRun = false;
 
-          Log.Info(`Connection done with ${this.sellerUrl}`);
+          Log.Info(`First cycle for, ${this.sellerUrl}`);
         } else {
-          Seller.findOne(
-            { _id: this.sellerId },
-            async (err: Error, sellerQuery: SellerModel | null) => {
-              if (err) {
-                Log.Warning(`Seller not found: ${this.sellerId}`);
-              } else if (!sellerQuery || !sellerQuery.products) {
-                Log.Warning(`No products found for ${this.sellerId}`);
-              } else {
-                var oldProducts = sellerQuery.products;
-                var newProducts: Product[] = [];
+          try {
+            const sellerQuery = await Seller.findOne({
+              _id: this.sellerId,
+            }).exec();
+            if (!sellerQuery || !sellerQuery.products) {
+              Log.Warning(`Product not found from ${this.sellerUrl}`);
+            } else {
+              var oldProducts = sellerQuery.products;
+              var newProducts: Product[] = [];
 
-                for (const product of products) {
-                  var found = oldProducts.find((x) => x.id === product.id);
-                  if (found){
-                    if (found.variants === product.variants) {
-                        return;
-                      }
-                      var oldPr = new Product(
-                        found.id,
-                        found.sellerUrl,
-                        found.name,
-                        found.url,
-                        found.handle,
-                        found.price,
-                        found.available,
-                        found.title,
-                        found.image,
-                        found.lastUpdate,
-                        found.variants,
-                        found.images
-                      );
-    
-                      var newPr = new Product(product.id, this.sellerUrl);
-                      newPr.updateInformation(product);
-    
-                      if (oldPr.needToNotifyUpdate(newPr)) {
-                        await Seller.updateOne(
-                          { _id: this.sellerId, "products.id": newPr.id },
-                          { $set: { "products.$": newPr } }
-                        );
-                      }
-                      else{
-                        await Seller.updateOne({ _id: this.sellerId, "products.id": product.id }, { $set: { "products.$.variants": product.variants }})
-                      }
+              for (const product of products) {
+                var found = oldProducts.find((x) => x.id === product.id);
+                if (found) {
+                  if (found.variants === product.variants) {
+                    return;
                   }
-                  else {
-                    var newPr = new Product(product.id, this.sellerUrl);
-                    newPr.updateInformation(product);
-                    newProducts =[...newProducts, newPr];
-                    Log.Success(`New product found for ${this.sellerUrl}, ${newPr.title}, ${newPr.variants}`);
-                    Discord.notifyProduct(newPr);
+                  var oldPr = new Product(
+                    found.id,
+                    found.sellerUrl,
+                    found.name,
+                    found.url,
+                    found.handle,
+                    found.price,
+                    found.available,
+                    found.title,
+                    found.image,
+                    found.lastUpdate,
+                    found.variants,
+                    found.images
+                  );
+
+                  var newPr = new Product(product.id, this.sellerUrl);
+                  newPr.updateInformation(product);
+
+                  if (oldPr.needToNotifyUpdate(newPr)) {
+                    await Seller.updateOne(
+                      { _id: this.sellerId, "products.id": newPr.id },
+                      { $set: { "products.$": newPr } }
+                    );
+                  } else {
+                    await Seller.updateOne(
+                      { _id: this.sellerId, "products.id": product.id },
+                      { $set: { "products.$.variants": product.variants } }
+                    );
+                    Log.Info(
+                      `Monitored ${newPr.title} from ${this.sellerUrl} `
+                    );
                   }
+                } else {
+                  var newPr = new Product(product.id, this.sellerUrl);
+                  newPr.updateInformation(product);
+                  newProducts = [...newProducts, newPr];
+                  Log.Success(
+                    `New product found for ${this.sellerUrl}, ${newPr.title}, ${newPr.variants}`
+                  );
+                  Discord.notifyProduct(newPr);
                 }
               }
             }
-          );
+          } catch (error) {
+            Log.Error(`Error in Monitor for ${this.sellerUrl}:${error}`);
+          }
         }
       } catch (error) {
         Log.Error(`Error in Monitor for ${this.sellerUrl}:${error}`);
@@ -199,7 +204,7 @@ class Monitor {
 }
 
 // Config path
-const configPath = path.resolve(__dirname, '..', 'config.json');
+const configPath = path.resolve(__dirname, "..", "config.json");
 const config: Config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
 // Create a Monitor for each store
