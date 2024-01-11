@@ -1,4 +1,5 @@
 import { ProductData } from "./types";
+import Log from "./Log";
 
 class Product {
   id: number;
@@ -66,20 +67,13 @@ class Product {
     this.price = productData.price;
     this.title = productData.title;
     this.image = productData.images?.[0]?.src || "";
-    this.variants = productData.variants || [];
-
-    productData.variants.forEach((x) => {
-      this.variants = [
-        ...this.variants,
-        {
-          id: x.id,
-          title: x.title,
-          price: x.price,
-          available: x.available,
-          inventory_quantity: x.inventory_quantity,
-        },
-      ];
-    });
+    this.variants = (productData.variants || []).map(x => ({
+      id: x.id,
+      title: x.title,
+      price: x.price,
+      available: x.available,
+      inventory_quantity: x.inventory_quantity,
+    }));
     this.available = productData.available;
   };
 
@@ -120,6 +114,9 @@ class Product {
         oldV.inventory_quantity !== newV.inventory_quantity
       ) {
         needToNotify = true;
+        Log.Info(`Mismatch in variants at index ${i}:`);
+        Log.Info(`oldV: ${JSON.stringify(oldV)}`);
+        Log.Info(`newV: ${JSON.stringify(newV)}`);
         break;
       }
     }

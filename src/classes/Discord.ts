@@ -1,7 +1,7 @@
 import { EmbedBuilder, WebhookClient, WebhookClientData } from "discord.js";
 import { globalConfig } from "../global";
 import Log from "./Log";
-import { ProductData } from "./types";
+import { DiscordData, APIEmbedField, Variants } from "./types";
 
 if (globalConfig.webhook_url.length === 0) {
   Log.Error(
@@ -32,21 +32,20 @@ Discord.notifyProduct = async ({
   image,
   url,
   variants,
-  status,
-}: any) => {
+  available,
+}: DiscordData) => {
   const embed = new EmbedBuilder()
     .setTitle(title)
-    .setAuthor(setBotName ? { name: setBotName.toString() } : null)
-    .setThumbnail(setBotImage.toString())
-    .setURL(url);
+    .setAuthor(setBotName ? { name: setBotName.toString() } : null);
+    // .setURL(url);
 
-  const availableVariants = variants.filter((x: any) => x.available);
+  const availableVariants = variants.filter((x: Variants) => x.available);
   if (availableVariants.length > 0) {
     const sizesDescription: string[] = [""];
     let count = 0;
 
-    availableVariants.forEach((x: ProductData) => {
-      const toAdd = `${x.title} / ${x.id} / [[ATC](https://${sellerUrl}/cart/add?id=${x.id})]\n`;
+    availableVariants.forEach((x: Variants) => {
+      const toAdd = `${x.title} | **Instock:** ${x.available} | **Quantity:** ${x.inventory_quantity}\n`;
 
       sizesDescription[count] = sizesDescription[count] || "";
 
@@ -60,25 +59,27 @@ Discord.notifyProduct = async ({
 
     sizesDescription.forEach((x) => {
       embed.addFields({ name: "**Sizes**", value: x, inline: true });
+      Log.Warning(`Sizes: ${x}`);
     });
   }
 
-  embed.addFields("**Price**", variants[0].price, true);
+  embed.addFields([
+    { name: "**Price**", value: ((variants[0]?.price ?? 0) / 100).toFixed(2).toString(), inline: true } as APIEmbedField
+  ]);
 
-  if (status.length > 0) {
-    embed.addFields("**Status**", status.join("\n"), true);
+
+  if (available === true) {
+    embed.addFields([
+      { name: "**Instock?**", value: available.toString(), inline: true } as APIEmbedField
+    ]);
   }
 
-  embed
-    .addFields({
-      name: "**Links**",
-      value: `[[Cart](https://${sellerUrl}/cart)]`,
-      inline: true,
-    })
-    .setThumbnail(image);
+  // embed
+  //   .addFields({ name: "**Links**", value: `[[Cart](https://${sellerUrl}/cart)]`, inline: true });
+  //   .setThumbnail(image.url ? image.url : "");
 
   if (botSettings.footerDescription || botSettings.footerImage) {
-    embed.setFooter({ text: botSettings.footerDescription });
+    embed.setFooter({ text: botSettings.footerDescription ? botSettings.footerDescription: ""});
   }
 
   if (botSettings.timeOfNotification) {

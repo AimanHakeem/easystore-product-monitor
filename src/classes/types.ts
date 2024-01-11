@@ -16,6 +16,39 @@ export interface ProductData {
   available: boolean;
 }
 
+export interface Variants {
+  id: number;
+  title: string;
+  price: number;
+  available: boolean;
+  inventory_quantity: number;
+}
+
+export interface DiscordData extends Variants{
+  title: string;
+  description: string;
+  sellerUrl: string;
+  url: string;
+  color: number;
+  timestamp: string;
+  variants: Variants[];
+  footer: {
+    text: string;
+    icon_url: string;
+  };
+  thumbnail: {
+    url: string;
+  };
+  image: {
+    url: string;
+  };
+}
+
+export interface APIEmbedField {
+  name: string;
+  value: string;
+  inline: boolean;
+}
 export interface ProductModel extends ProductData {
   url: string;
   lastUpdate: string;

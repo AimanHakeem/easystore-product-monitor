@@ -138,7 +138,7 @@ class Monitor {
               _id: this.sellerId,
             }).exec();
             if (!sellerQuery || !sellerQuery.products) {
-              Log.Warning(`Product not found from ${this.sellerUrl}`);
+              return;
             } else {
               var oldProducts = sellerQuery.products;
               var newProducts: Product[] = [];
@@ -146,7 +146,10 @@ class Monitor {
               for (const product of products) {
                 var found = oldProducts.find((x) => x.id === product.id);
                 if (found) {
-                  if (found.variants === product.variants) {
+                  if (
+                    JSON.stringify(found.variants) ===
+                    JSON.stringify(product.variants)
+                  ) {
                     return;
                   }
                   var oldPr = new Product(
@@ -172,13 +175,11 @@ class Monitor {
                       { _id: this.sellerId, "products.id": newPr.id },
                       { $set: { "products.$": newPr } }
                     );
+                    Discord.notifyProduct(newPr);
                   } else {
                     await Seller.updateOne(
                       { _id: this.sellerId, "products.id": product.id },
                       { $set: { "products.$.variants": product.variants } }
-                    );
-                    Log.Info(
-                      `Monitored ${newPr.title} from ${this.sellerUrl} `
                     );
                   }
                 } else {
@@ -186,7 +187,7 @@ class Monitor {
                   newPr.updateInformation(product);
                   newProducts = [...newProducts, newPr];
                   Log.Success(
-                    `New product found for ${this.sellerUrl}, ${newPr.title}, ${newPr.variants}`
+                    `New product found for ${this.sellerUrl}, ${newPr.title}`
                   );
                   Discord.notifyProduct(newPr);
                 }
