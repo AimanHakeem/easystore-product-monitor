@@ -10,8 +10,7 @@ class Product {
   price: number;
   available: boolean;
   title: string;
-  image: string;
-  images: { src: string }[];
+  images: string;
   variants: Array<{
     id: number;
     title: string;
@@ -19,8 +18,6 @@ class Product {
     available: boolean;
     inventory_quantity: number;
   }>;
-  lastUpdate: string;
-  updated_at?: string | undefined;
 
   constructor(
     id: number,
@@ -31,8 +28,6 @@ class Product {
     price?: number,
     available?: boolean,
     title?: string,
-    image?: string,
-    lastUpdate?: string,
     variants?: Array<{
       id: number;
       title: string;
@@ -40,8 +35,7 @@ class Product {
       available: boolean;
       inventory_quantity: number;
     }>,
-    images?: { src: string }[],
-    updated_at?: string | undefined,
+    images?: string,
 
 ) {
     this.id = id;
@@ -52,21 +46,20 @@ class Product {
     this.available = available || false;
     this.price = price || 0;
     this.title = title || "";
-    this.image = image || "";
-    this.images = images || [];
+    this.images = images || "";
     this.variants = variants || [];
-    this.lastUpdate = lastUpdate || "";
-    this.updated_at = updated_at;
 }
 
   updateInformation = (productData: ProductData): void => {
     this.id = productData.id;
     this.name = productData.name;
     this.handle = productData.handle;
-    this.url = `https://${this.sellerUrl}/products/${this.handle}`;
+    this.url = `${this.sellerUrl}/products/${this.handle}`;
     this.price = productData.price;
     this.title = productData.title;
-    this.image = productData.images?.[0]?.src || "";
+    const firstImage = ((productData.images as unknown as { src: string }[] || [])[0]?.src || '') as string;
+    this.images = firstImage;
+    
     this.variants = (productData.variants || []).map(x => ({
       id: x.id,
       title: x.title,
@@ -114,9 +107,7 @@ class Product {
         oldV.inventory_quantity !== newV.inventory_quantity
       ) {
         needToNotify = true;
-        Log.Info(`Mismatch in variants at index ${i}:`);
-        Log.Info(`oldV: ${JSON.stringify(oldV)}`);
-        Log.Info(`newV: ${JSON.stringify(newV)}`);
+        Log.Info(`Product changed: ${this.name} - ${this.sellerUrl}`);
         break;
       }
     }

@@ -45,7 +45,7 @@ async function run() {
   } catch (err) {
     console.error('An error occurred:', err);
   } finally {
-    Log.Info('Closing mongoose connection...');
+    Log.Info('Monitoring started for all stores.');
   }
 }
 

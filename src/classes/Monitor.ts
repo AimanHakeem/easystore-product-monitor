@@ -93,8 +93,6 @@ class Monitor {
 
         const response = await axios.get(url, config);
 
-        Log.Info(`Crawling site: ${this.sellerUrl}`);
-
         this.currentProxy.banCount = 0.5;
 
         const $ = cheerio.load(response.data);
@@ -111,7 +109,6 @@ class Monitor {
 
         var products = collectionData.products;
 
-        Log.Info(`Found ${products.length} products from ${this.sellerUrl}`);
         if (this.firstRun) {
           let newProducts: Product[] = [];
 
@@ -161,8 +158,6 @@ class Monitor {
                     found.price,
                     found.available,
                     found.title,
-                    found.image,
-                    found.lastUpdate,
                     found.variants,
                     found.images
                   );
@@ -175,6 +170,7 @@ class Monitor {
                       { _id: this.sellerId, "products.id": newPr.id },
                       { $set: { "products.$": newPr } }
                     );
+                    Log.Success(`Product variant changes for ${newPr.title} | Stock Available: ${newPr.available}`)
                     Discord.notifyProduct(newPr);
                   } else {
                     await Seller.updateOne(

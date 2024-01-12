@@ -29,16 +29,26 @@ const Discord: any = {}; // You can define proper types for Discord object
 Discord.notifyProduct = async ({
   title,
   sellerUrl,
-  image,
+  images,
   url,
+  handle,
   variants,
   available,
 }: DiscordData) => {
   const embed = new EmbedBuilder()
     .setTitle(title)
-    .setAuthor(setBotName ? { name: setBotName.toString() } : null);
-    // .setURL(url);
+    .setURL(url)
+    .setThumbnail(images)
+    .setColor('#00ff00');
 
+
+  if (setBotName && setBotImage) {
+    embed.setAuthor({
+      name: botSettings.botName,
+      iconURL: botSettings.botImage,
+      url: url,
+    });
+  }
   const availableVariants = variants.filter((x: Variants) => x.available);
   if (availableVariants.length > 0) {
     const sizesDescription: string[] = [""];
@@ -59,27 +69,37 @@ Discord.notifyProduct = async ({
 
     sizesDescription.forEach((x) => {
       embed.addFields({ name: "**Sizes**", value: x, inline: true });
-      Log.Warning(`Sizes: ${x}`);
     });
   }
 
   embed.addFields([
-    { name: "**Price**", value: ((variants[0]?.price ?? 0) / 100).toFixed(2).toString(), inline: true } as APIEmbedField
+    {
+      name: "**Price**",
+      value: ((variants[0]?.price ?? 0) / 100).toFixed(2).toString(),
+      inline: true,
+    } as APIEmbedField,
   ]);
 
+  embed.addFields([
+    {
+      name: "**Instock**",
+      value: available.toString(),
+      inline: true,
+    } as APIEmbedField,
+  ]);
 
-  if (available === true) {
-    embed.addFields([
-      { name: "**Instock?**", value: available.toString(), inline: true } as APIEmbedField
-    ]);
-  }
-
-  // embed
-  //   .addFields({ name: "**Links**", value: `[[Cart](https://${sellerUrl}/cart)]`, inline: true });
-  //   .setThumbnail(image.url ? image.url : "");
+  embed
+    .addFields({
+      name: "**Links**",
+      value: `[[Direct Link](${url})]`,
+      inline: true,
+    })
+    .setThumbnail(images);
 
   if (botSettings.footerDescription || botSettings.footerImage) {
-    embed.setFooter({ text: botSettings.footerDescription ? botSettings.footerDescription: ""});
+    embed.setFooter({
+      text: botSettings.footerDescription ? botSettings.footerDescription : "",
+    });
   }
 
   if (botSettings.timeOfNotification) {

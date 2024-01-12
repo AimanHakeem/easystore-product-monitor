@@ -5,7 +5,7 @@ export interface ProductData {
   handle: string;
   title: string;
   sellerUrl: string;
-  images: { src: string }[];
+  images: string;
   variants: Array<{
     id: number;
     title: string;
@@ -30,6 +30,7 @@ export interface DiscordData extends Variants{
   sellerUrl: string;
   url: string;
   color: number;
+  handle: string;
   timestamp: string;
   variants: Variants[];
   footer: {
@@ -39,9 +40,7 @@ export interface DiscordData extends Variants{
   thumbnail: {
     url: string;
   };
-  image: {
-    url: string;
-  };
+  images: string;
 }
 
 export interface APIEmbedField {
