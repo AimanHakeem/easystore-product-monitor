@@ -1,5 +1,5 @@
 
-# Easystore Monitor
+# Easystore Product Monitor
 
 The purpose of the monitor is to monitor product on real time allowing users to purchase limited product!
 
@@ -13,7 +13,7 @@ Any other site of easystore can be update and add the entry point.
 Install with npm
 
 ```bash
-  cd easystore-typescript
+  cd easystore-product-monitor
   npm i
 ```
 
