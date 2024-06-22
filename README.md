@@ -10,10 +10,15 @@ Any other site of easystore can be update and add the entry point.
 
 ## Installation
 
-Install my-project with npm
+Install with npm
 
 ```bash
   cd easystore-typescript
   npm i
+```
+
+## Usage
+```bash
+ node index
 ```
     
