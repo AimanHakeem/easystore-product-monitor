@@ -19,12 +19,12 @@
     ],
     "pollingInterval": 2000,
     "webhook_url": [
-        "https://discord.com/api/webhooks/1195099245833879733/ZQtcxttn-vlr9SzMAu6MCWNbDWBMK3rbQIgJW80eE4EBHkfvAErVlbViseNiLyV3Qo35"
+        "DISCORD_WEBHOOK_HERE"
     ],
     "discord_message_settings": {
         "botImage": "https://images.crunchbase.com/image/upload/c_pad,f_auto,q_auto:eco,dpr_1/v1468863165/dp7nmnqptpp1jjdwmvqe.png",
         "botName": "Easystore Monitor",
-        "footerDescription": "Easystore Monitor by @itskeem_",
+        "footerDescription": "Easystore Monitor",
         "footerImage": "",
         "timeOfNotification": true
     }
